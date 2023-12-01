@@ -11,7 +11,7 @@ fun main() {
 
 fun day1part1(input: List<String>): Int =
     input.sumOf { line ->
-        (line.takeFirstDigit(true)*10) + line.takeLastDigit(false)
+        (line.takeFirstDigit(false)*10) + line.takeLastDigit(false)
     }
 
 fun day1part2(input: List<String>): Int =
@@ -20,12 +20,10 @@ fun day1part2(input: List<String>): Int =
     }
 
 fun String.takeFirstDigit(includeStringLiterals: Boolean = true): Int {
-    (1 .. this.length).forEach { n ->
-        if(this[n-1].isDigit()) {
-            return this[n-1].digitToInt()
-        }
+    this.forEachIndexed { idx, c ->
+        if(c.isDigit()) return c.digitToInt()
         else if(includeStringLiterals) {
-            val i = this.take(n).getIntForContainedLiteralOrNull()
+            val i = this.take(idx+1).getIntForContainedLiteralOrNull()
             if(i != null) return i
         }
     }
@@ -33,12 +31,10 @@ fun String.takeFirstDigit(includeStringLiterals: Boolean = true): Int {
 }
 
 fun String.takeLastDigit(includeStringLiterals: Boolean = true): Int {
-    (1 .. this.length).forEach { n ->
-        if(this[this.length-n].isDigit()) {
-            return this[this.length-n].digitToInt()
-        }
+    this.reversed().forEachIndexed { idx, c ->
+        if(c.isDigit()) return c.digitToInt()
         else if(includeStringLiterals) {
-            val i = this.takeLast(n).getIntForContainedLiteralOrNull()
+            val i = this.takeLast(idx+1).getIntForContainedLiteralOrNull()
             if(i != null) return i
         }
     }
