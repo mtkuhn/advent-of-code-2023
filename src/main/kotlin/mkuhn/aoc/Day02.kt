@@ -1,6 +1,7 @@
 package mkuhn.aoc
 
 import mkuhn.aoc.util.readInput
+import java.lang.Integer.max
 
 fun main() {
     val input = readInput("Day02")
@@ -9,36 +10,45 @@ fun main() {
 }
 
 fun day2part1(input: List<String>): Int {
-    val games = input.map { CubeGame.fromLine(it) }
-    return games.filter { it.isPossibleWithCounts(12, 13, 14) }
-        .apply { this.forEach { println(it) } }
+    return input.map { CubeGame.fromLine(it) }
+        .filter { it.isPossibleWithCounts(12, 13, 14) }
         .sumOf { it.id }
 }
 
-fun day2part2(input: List<String>): Int =
-    0
+fun day2part2(input: List<String>): Int {
+    return input.map { CubeGame.fromLine(it) }
+        .sumOf { it.getMinimumCubeCount().power() }
+}
 
 
-data class CubeGame (val id: Int, val reveals: List<CubeGameReveal>) {
+data class CubeGame (val id: Int, val reveals: List<CubeCount>) {
 
     fun isPossibleWithCounts(red: Int, green: Int, blue: Int): Boolean =
         reveals.all { it.red <= red && it.green <= green && it.blue <= blue }
+
+    fun getMinimumCubeCount(): CubeCount =
+        reveals.reduce { acc, cc ->
+            CubeCount(max(acc.red, cc.red), max(acc.green, cc.green), max(acc.blue, cc.blue))
+        }
 
     companion object {
         fun fromLine(line: String): CubeGame {
             val parts = line.split(": ", "; ")
             val id = parts[0].drop(5).toInt()
             val reveals = parts.drop(1).map {
-                CubeGameReveal.fromString(it)
+                CubeCount.fromString(it)
             }
             return CubeGame(id, reveals)
         }
     }
 }
 
-data class CubeGameReveal(val red: Int, val green: Int, val blue: Int) {
+data class CubeCount(val red: Int, val green: Int, val blue: Int) {
+
+    fun power() = red*green*blue
+
     companion object {
-        fun fromString(input: String): CubeGameReveal {
+        fun fromString(input: String): CubeCount {
             var r = 0
             var g = 0
             var b = 0
@@ -49,7 +59,7 @@ data class CubeGameReveal(val red: Int, val green: Int, val blue: Int) {
                     "blue" -> b = colorCount.substringBefore(" ").trim().toInt()
                 }
             }
-            return CubeGameReveal(r, g, b)
+            return CubeCount(r, g, b)
         }
     }
 }
