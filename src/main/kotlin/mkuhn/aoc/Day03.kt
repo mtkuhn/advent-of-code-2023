@@ -1,7 +1,6 @@
 package mkuhn.aoc
 
 import mkuhn.aoc.util.readInput
-import java.lang.Integer.max
 
 fun main() {
     val input = readInput("Day03")
@@ -11,7 +10,7 @@ fun main() {
 
 fun day3part1(input: List<String>): Int {
     val numberSurroundingRanges = input.findAllMatchesWithSurroundingBounds("\\d+".toRegex())
-    val symbolCoords = input.findAllMatchesWithCoords("[^\\.\\d]".toRegex())
+    val symbolCoords = input.findAllMatchesWithCoords("[^.\\d]".toRegex())
 
     return numberSurroundingRanges.filter { nums ->
         symbolCoords.any { nums.second.contains(it) }
