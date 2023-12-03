@@ -10,40 +10,38 @@ fun main() {
 }
 
 fun day3part1(input: List<String>): Int {
-    val numberSurroundingRanges = input.flatMapIndexed { lineIdx, line ->
-        "\\d+".toRegex().findAll(line).map {
-            it.value to (it.range.surroundingRange(line.indices) to lineIdx.surroundingRange(input.indices))
-        }
-    }
-
-    val symbolCoords = input.flatMapIndexed { lineIdx, line ->
-        "[^\\.\\d]".toRegex().findAll(line).map { it.range.first to lineIdx }
-    }
+    val numberSurroundingRanges = input.findAllMatchesWithSurroundingBounds("\\d+".toRegex())
+    val symbolCoords = input.findAllMatchesWithCoords("[^\\.\\d]".toRegex())
 
     return numberSurroundingRanges.filter { nums ->
-        symbolCoords.any { it.coordInLineAndRange(nums.second) }
-    }.sumOf { it.first.toInt() }
+        symbolCoords.any { nums.second.contains(it) }
+    }.sumOf { it.first }
 }
 
 fun day3part2(input: List<String>): Int {
-    val numberSurroundingRanges = input.flatMapIndexed { lineIdx, line ->
-        "\\d+".toRegex().findAll(line).map {
-            it.value to (it.range.surroundingRange(line.indices) to lineIdx.surroundingRange(input.indices))
-        }
-    }
-
-    val asteriskCoords = input.flatMapIndexed { lineIdx, line ->
-        "\\*".toRegex().findAll(line).map { it.range.first to lineIdx }
-    }
+    val numberSurroundingRanges = input.findAllMatchesWithSurroundingBounds("\\d+".toRegex())
+    val asteriskCoords = input.findAllMatchesWithCoords("\\*".toRegex())
 
     val gears = asteriskCoords.mapNotNull { ast ->
-        val nums = numberSurroundingRanges.filter { ast.coordInLineAndRange(it.second) }
-        if(nums.size == 2) nums
+        val nums = numberSurroundingRanges.filter { it.second.contains(ast) }
+        if(nums.size == 2) nums.first().first to nums.last().first
         else null
     }
 
-    return gears.sumOf { it.first().first.toInt() * it.last().first.toInt() }
+    return gears.sumOf { it.first * it.second }
 }
+
+fun List<String>.findAllMatchesWithSurroundingBounds(regex: Regex): List<Pair<Int, IntRange2D>> =
+    this.flatMapIndexed { lineIdx, line ->
+        regex.findAll(line).map {
+            it.value.toInt() to IntRange2D(it.range.surroundingRange(line.indices), lineIdx.surroundingRange(this.indices))
+        }
+    }
+
+fun List<String>.findAllMatchesWithCoords(regex: Regex) =
+    this.flatMapIndexed { lineIdx, line ->
+        regex.findAll(line).map { it.range.first to lineIdx }
+    }
 
 fun Int.surroundingRange(bounds: IntRange): IntRange =
     ((this-1) .. (this+1)).coerceWithin(bounds)
@@ -54,5 +52,6 @@ fun IntRange.surroundingRange(bounds: IntRange): IntRange =
 fun IntRange.coerceWithin(bounds: IntRange): IntRange =
     (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
 
-fun Pair<Int, Int>.coordInLineAndRange(boundingBox: Pair<IntRange, IntRange>): Boolean =
-    this.first in boundingBox.first && this.second in boundingBox.second
+data class IntRange2D(val xRange: IntRange, val yRange: IntRange) {
+    fun contains(coord: Pair<Int, Int>): Boolean = coord.first in xRange && coord.second in yRange
+}
