@@ -10,20 +10,49 @@ fun main() {
 }
 
 fun day3part1(input: List<String>): Int {
-    return input.flatMapIndexed { lineIdx, line ->
-        val numberMatches = "\\d+".toRegex().findAll(line).toList()
-        numberMatches.filter { m ->
-            val symbolRange = ((m.range.first-1) .. (m.range.last+1)).coerceWithin(line.indices)
-            val lineRange = (lineIdx-1 .. lineIdx+1).coerceWithin(input.indices)
-            lineRange.map { i -> input[i].substring(symbolRange) }
-                .any { it.contains("[^\\.0-9]".toRegex()) }
+    val numberSurroundingRanges = input.flatMapIndexed { lineIdx, line ->
+        "\\d+".toRegex().findAll(line).map {
+            it.value to (it.range.surroundingRange(line.indices) to lineIdx.surroundingRange(input.indices))
         }
-    }.sumOf { it.value.toInt() }
+    }
+
+    val symbolCoords = input.flatMapIndexed { lineIdx, line ->
+        "[^\\.\\d]".toRegex().findAll(line).map { it.range.first to lineIdx }
+    }
+
+    return numberSurroundingRanges.filter { nums ->
+        symbolCoords.any { it.coordInLineAndRange(nums.second) }
+    }.sumOf { it.first.toInt() }
 }
 
 fun day3part2(input: List<String>): Int {
-    return 0
+    val numberSurroundingRanges = input.flatMapIndexed { lineIdx, line ->
+        "\\d+".toRegex().findAll(line).map {
+            it.value to (it.range.surroundingRange(line.indices) to lineIdx.surroundingRange(input.indices))
+        }
+    }
+
+    val asteriskCoords = input.flatMapIndexed { lineIdx, line ->
+        "\\*".toRegex().findAll(line).map { it.range.first to lineIdx }
+    }
+
+    val gears = asteriskCoords.mapNotNull { ast ->
+        val nums = numberSurroundingRanges.filter { ast.coordInLineAndRange(it.second) }
+        if(nums.size == 2) nums
+        else null
+    }
+
+    return gears.sumOf { it.first().first.toInt() * it.last().first.toInt() }
 }
+
+fun Int.surroundingRange(bounds: IntRange): IntRange =
+    ((this-1) .. (this+1)).coerceWithin(bounds)
+
+fun IntRange.surroundingRange(bounds: IntRange): IntRange =
+    ((this.first-1) .. (this.last+1)).coerceWithin(bounds)
 
 fun IntRange.coerceWithin(bounds: IntRange): IntRange =
     (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
+
+fun Pair<Int, Int>.coordInLineAndRange(boundingBox: Pair<IntRange, IntRange>): Boolean =
+    this.first in boundingBox.first && this.second in boundingBox.second
