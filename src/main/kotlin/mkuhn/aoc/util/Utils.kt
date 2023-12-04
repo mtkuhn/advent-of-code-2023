@@ -54,3 +54,7 @@ infix fun LongRange.fullyOverlaps(other: LongRange): Boolean =
 
 infix fun LongRange.overlaps(other: LongRange): Boolean =
     first <= other.last && other.first <= last
+
+fun IntRange.coerceWithin(bounds: IntRange): IntRange =
+    (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
+

@@ -1,5 +1,6 @@
 package mkuhn.aoc
 
+import mkuhn.aoc.util.coerceWithin
 import mkuhn.aoc.util.readInput
 
 fun main() {
@@ -47,9 +48,6 @@ fun Int.surroundingRange(bounds: IntRange): IntRange =
 
 fun IntRange.surroundingRange(bounds: IntRange): IntRange =
     ((this.first-1) .. (this.last+1)).coerceWithin(bounds)
-
-fun IntRange.coerceWithin(bounds: IntRange): IntRange =
-    (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
 
 data class IntRange2D(val xRange: IntRange, val yRange: IntRange) {
     fun contains(coord: Pair<Int, Int>): Boolean = coord.first in xRange && coord.second in yRange
