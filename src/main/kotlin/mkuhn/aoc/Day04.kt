@@ -16,7 +16,7 @@ fun day4part1(input: List<String>): Int =
 
 fun day4part2(input: List<String>): Int {
     val cards = input.map { line -> ScoredCard.fromString(line) }
-    val cardIdxToCopyCount = cards.mapIndexed { i, c -> i to 1 }.toMap().toMutableMap()
+    val cardIdxToCopyCount = List(cards.size) { i -> i to 1 }.toMap().toMutableMap()
     cards.forEachIndexed { cardIdx, card ->
         if(card.matchingNumberCount > 0) {
             (cardIdx+1 .. cardIdx+card.matchingNumberCount).coerceWithin(cards.indices)
@@ -25,14 +25,12 @@ fun day4part2(input: List<String>): Int {
                 }
         }
     }
-
     return cardIdxToCopyCount.values.sum()
 }
 
-data class ScoredCard(val cardNumber: Int, val matchingNumberCount: Int, val score: Int) {
+data class ScoredCard(val matchingNumberCount: Int, val score: Int) {
     companion object {
         fun fromString(line: String): ScoredCard {
-            val cardNumber = line.substringAfter("Card ").substringBefore(":").trim().toInt()
             val winningNumbers = line.substringAfter(": ")
                 .substringBefore(" | ")
                 .split(" ")
@@ -49,7 +47,7 @@ data class ScoredCard(val cardNumber: Int, val matchingNumberCount: Int, val sco
                 0 -> 0
                 else -> (2.0).pow(matchingNumberCount - 1.0).toInt()
             }
-            return ScoredCard(cardNumber, matchingNumberCount, score)
+            return ScoredCard(matchingNumberCount, score)
         }
     }
 }
