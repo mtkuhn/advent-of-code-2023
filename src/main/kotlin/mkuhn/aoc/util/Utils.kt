@@ -58,3 +58,23 @@ infix fun LongRange.overlaps(other: LongRange): Boolean =
 fun IntRange.coerceWithin(bounds: IntRange): IntRange =
     (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
 
+fun LongRange.coerceWithin(bounds: LongRange): LongRange =
+    (start).coerceAtLeast(bounds.first) .. (endInclusive).coerceAtMost(bounds.last)
+
+infix fun LongRange.minus(substract: LongRange): List<LongRange> {
+    return if(substract fullyOverlaps this) emptyList()
+    else if(this intersect substract == null) listOf(this)
+    else {
+        val differences = mutableListOf<LongRange>()
+        if(this.first < substract.first) differences.add(this.first until substract.first)
+        if(this.last > substract.last) differences.add((substract.last+1) .. this.last)
+        differences
+    }
+}
+
+infix fun LongRange.intersect(other: LongRange): LongRange? =
+    if (this fullyOverlaps other) other
+    else if (other fullyOverlaps this) this
+    else if (this overlaps other) this.first.coerceAtLeast(other.first) .. this.last.coerceAtMost(other.last)
+    else null
+

@@ -5,7 +5,7 @@ I won't be doing fancy write-ups this year, but have some links to the solutions
 
 |                    ❄️                    | 🎅  | 🎄  |  ⛄ | 🎁  |
 |:---:|:---:|:---:|:--:|:---:|
-| [1](/src/main/kotlin/mkuhn/aoc/Day01.kt) |  [2](/src/main/kotlin/mkuhn/aoc/Day02.kt)   |  [3](/src/main/kotlin/mkuhn/aoc/Day03.kt)   |  [4](/src/main/kotlin/mkuhn/aoc/Day04.kt)   |  5   |
+| [1](/src/main/kotlin/mkuhn/aoc/Day01.kt) |  [2](/src/main/kotlin/mkuhn/aoc/Day02.kt)   |  [3](/src/main/kotlin/mkuhn/aoc/Day03.kt)   |  [4](/src/main/kotlin/mkuhn/aoc/Day04.kt)   |  [5](/src/main/kotlin/mkuhn/aoc/Day05.kt)   |
 |                    6                     |  7   |  8   |  9   |  10  |
 |                    11                    |  12  |  13  |  14  |  15  |
 |                    16                    |  17  |  18  |  19  |  20  |
