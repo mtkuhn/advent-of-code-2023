@@ -35,39 +35,24 @@ data class RangedMap(val sourceType: String, val destinationType: String, val ra
     fun get(key: Long): Long = rangedMapEntries.firstOrNull { key in it.sourceRange }?.get(key)?:key
 
     fun get(key: LongRange): List<LongRange> {
-        val mappableRangesAndMapEntry = rangedMapEntries.mapNotNull { mapEntry ->
-            val intersection = key intersect mapEntry.sourceRange
-            if(intersection != null) intersection to mapEntry
-            else null
+        val mappableAndMappedRanges = rangedMapEntries.mapNotNull { mapEntry ->
+            (key intersect mapEntry.sourceRange)?.let { it to mapEntry.get(it.first) ..mapEntry.get(it.last) }
         }
-        val mappedRanges = mappableRangesAndMapEntry.map { it.second.get(it.first.first) .. it.second.get(it.first.last) }
-        val mappedKeyRanges = rangedMapEntries.mapNotNull { mapEntry ->
-            val intersection = key intersect mapEntry.sourceRange
-            if(intersection != null) (mapEntry.get(intersection.first) .. mapEntry.get(intersection.last))
-            else null
-        }
-        val unmappedKeyRanges = mappableRangesAndMapEntry.map { it.first }.fold(listOf(key)) { acc, r -> acc.flatMap { it minus r } }
-        return unmappedKeyRanges + mappedKeyRanges
+        val unmappedKeyRanges = mappableAndMappedRanges.map { it.first }.fold(listOf(key)) { acc, r -> acc.flatMap { it minus r } }
+        return unmappedKeyRanges + (mappableAndMappedRanges.map { it.second })
     }
 
     companion object {
         fun fromLines(lines: List<String>): RangedMap {
             val types = lines.first().split("-", " ")
-            return RangedMap(
-                types[0],
-                types[2],
-                lines.drop(1).map { RangedMapEntry.fromString(it) }
-            )
+            return RangedMap(types[0], types[2], lines.drop(1).map { RangedMapEntry.fromString(it) })
         }
     }
 }
 
 data class RangedMapEntry(val sourceRange: LongRange, val destinationRange: LongRange) {
 
-    fun get(key: Long): Long {
-        if(!sourceRange.contains(key)) error("key $key not in source range $sourceRange")
-        return destinationRange.first + (key-sourceRange.first)
-    }
+    fun get(key: Long): Long = destinationRange.first + (key-sourceRange.first)
 
     companion object {
         fun fromString(input: String): RangedMapEntry =
