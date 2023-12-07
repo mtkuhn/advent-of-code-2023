@@ -5,8 +5,8 @@ import kotlin.math.pow
 
 fun main() {
     val input = readInput("Day07")
-    println(day07part1(input)) //246272322 too low, 246806198 too high
-    println(day07part2(input))
+    println(day07part1(input))
+    println(day07part2(input)) //247903548, 248178141 too low; 248567390 too high
 }
 
 fun day07part1(input: List<String>): Int {
@@ -15,7 +15,8 @@ fun day07part1(input: List<String>): Int {
 }
 
 fun day07part2(input: List<String>): Int {
-    return 0
+    val hands = input.map { Hand(it.substringBefore(" ").toList(), it.substringAfter(" ").toInt()) }
+    return hands.sortedBy { it.scoreWithJokers() }.mapIndexed { i, h -> h.bid * (i+1) }.sum()
 }
 
 data class Hand(val cards: List<Char>, val bid: Int) {
@@ -23,18 +24,39 @@ data class Hand(val cards: List<Char>, val bid: Int) {
     fun score(): Long {
         val groupedCards = cards.groupBy { it }
         val typeScore = when {
-            groupedCards.size == 1 -> 20
-            groupedCards.any { it.value.size == 4 } -> 19
-            groupedCards.any { it.value.size == 3 }
-                    && groupedCards.any { it.value.size == 2 } -> 18
-            groupedCards.any { it.value.size == 3 } -> 17
-            groupedCards.count { it.value.size == 2 } == 2 -> 16
-            groupedCards.any { it.value.size == 2 } -> 15
-            else -> 0 //cards.maxOf { cardScore(it) }
+            groupedCards.size == 1 -> 6
+            groupedCards.any { it.value.size == 4 } -> 5
+            groupedCards.any { it.value.size == 3 } && groupedCards.any { it.value.size == 2 } -> 4
+            groupedCards.any { it.value.size == 3 } -> 3
+            groupedCards.count { it.value.size == 2 } == 2 -> 2
+            groupedCards.any { it.value.size == 2 } -> 1
+            else -> 0
         }
 
         val cardScore = cards.reversed().mapIndexed { i, c ->
             cardScore(c).toLong()*((100.0).pow(i).toLong())
+        }.sum()
+
+        return (typeScore*10000000000) + cardScore
+    }
+
+    fun scoreWithJokers(): Long {
+        val numJokers = cards.count { it == 'J' }
+        val groupedCards = cards.filter { it != 'J' }.groupBy { it }
+        val typeScore = when {
+            numJokers == 5 -> 6
+            groupedCards.any { it.value.size+numJokers == 5 } -> 6
+            groupedCards.any { it.value.size+numJokers == 4 } -> 5
+            groupedCards.any { it.value.size == 3 } && groupedCards.any { it.value.size == 2 } -> 4
+            groupedCards.count { it.value.size == 2 } == 2 && numJokers >= 1 -> 4
+            groupedCards.any { it.value.size+numJokers == 3 } -> 3
+            groupedCards.count { it.value.size == 2 } == 2 -> 2 //bad joker case, jumping to 3 of a kind is always better than 2 pair
+            groupedCards.any { it.value.size+numJokers == 2 } -> 1
+            else -> 0
+        }
+
+        val cardScore = cards.reversed().mapIndexed { i, c ->
+            cardScoreWithJokers(c).toLong()*((100.0).pow(i).toLong())
         }.sum()
 
         return (typeScore*10000000000) + cardScore
@@ -45,6 +67,17 @@ data class Hand(val cards: List<Char>, val bid: Int) {
             c.isDigit() -> c.digitToInt()
             c == 'T' -> 10
             c == 'J' -> 11
+            c == 'Q' -> 12
+            c == 'K' -> 13
+            c == 'A' -> 14
+            else -> error("bad input")
+        }
+
+    fun cardScoreWithJokers(c: Char): Int =
+        when {
+            c.isDigit() -> c.digitToInt()
+            c == 'T' -> 10
+            c == 'J' -> 0
             c == 'Q' -> 12
             c == 'K' -> 13
             c == 'A' -> 14
