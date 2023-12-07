@@ -6,7 +6,7 @@ import kotlin.math.pow
 fun main() {
     val input = readInput("Day07")
     println(day07part1(input))
-    println(day07part2(input)) //247903548, 248178141 too low; 248567390 too high
+    println(day07part2(input))
 }
 
 fun day07part1(input: List<String>): Int {
@@ -62,25 +62,7 @@ data class Hand(val cards: List<Char>, val bid: Int) {
         return (typeScore*10000000000) + cardScore
     }
 
-    fun cardScore(c: Char): Int =
-        when {
-            c.isDigit() -> c.digitToInt()
-            c == 'T' -> 10
-            c == 'J' -> 11
-            c == 'Q' -> 12
-            c == 'K' -> 13
-            c == 'A' -> 14
-            else -> error("bad input")
-        }
+    fun cardScore(c: Char): Int = "23456789TJQKA".indexOf(c)
 
-    fun cardScoreWithJokers(c: Char): Int =
-        when {
-            c.isDigit() -> c.digitToInt()
-            c == 'T' -> 10
-            c == 'J' -> 0
-            c == 'Q' -> 12
-            c == 'K' -> 13
-            c == 'A' -> 14
-            else -> error("bad input")
-        }
+    fun cardScoreWithJokers(c: Char): Int = "J23456789TQKA".indexOf(c)
 }
