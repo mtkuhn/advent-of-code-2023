@@ -40,6 +40,16 @@ inline fun <T> Iterable<T>.takeWhileInclusive(predicate: (T) -> Boolean): List<T
     return list
 }
 
+inline fun <T> Sequence<T>.takeWhileInclusive(predicate: (T) -> Boolean): List<T> {
+    val list = ArrayList<T>()
+    for (item in this) {
+        list.add(item)
+        if (!predicate(item))
+            break
+    }
+    return list
+}
+
 fun Int.progressBetween(i: Int) = IntProgression.fromClosedRange(this, i, if(this > i) -1 else 1)
 
 //stolen shamelessly from Todd
