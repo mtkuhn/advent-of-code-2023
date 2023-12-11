@@ -22,33 +22,22 @@ fun day10part2(input: List<String>): Int {
     val initPath = grid.adjacentTo(startPos).first()
     val path = grid.pipeLoopSequence(initPath).takeWhile { it.position != startPos }.toMutableList()
 
-    //val startPipe = grid.getStartPipeWithCorrectType(initPath, path.last())
-    //path += startPipe
-
-    println(path.map { it.char })
+    val startPipe = grid.getStartPipeWithCorrectType(initPath, path.last())
+    path += startPipe
 
     val pathPositions = path.map { p -> p.position }.toSet()
-    val containedAlongPath =
-        path.flatMap { pipe ->
-            val dir = pipe.fromDirection.getInwardClockwise()
-            val next = dir.moveToward(pipe.position)
-            next.getPositionsInDirectionWhile(dir) { grid.hasPosition(it) && it !in pathPositions }//.apply { println("${pipe.char} : $this") }
-                .toSet()
+
+    val x = path.filter { it.char in ("|JL") }
+        .groupBy { it.position.first }
+        .flatMap { gr ->
+            val ranges = gr.value
+                .sortedBy { it.position.second }
+                .chunked(2)
+                .map { it.first().position.second .. it.last().position.second }
+            ranges.flatMap { v -> v.map { gr.key to it } }.filter { it !in pathPositions }
         }.toSet()
 
-    val containedAlongPath2 =
-        path.flatMap { pipe ->
-            val dir = pipe.fromDirection.getInwardCounterClockwise()
-            val next = dir.moveToward(pipe.position)
-            next.getPositionsInDirectionWhile(dir) { grid.hasPosition(it) && it !in pathPositions }.apply { println("${pipe.char} : $this") }
-                .toSet()
-        }.toSet()
-
-    println(containedAlongPath)
-    println(containedAlongPath2)
-
-    println("${containedAlongPath.size} ${containedAlongPath2.size}")
-    return minOf(containedAlongPath.size, containedAlongPath2.size)
+    return x.size
 }
 
 data class Pipe(val char: Char, val position: Pair<Int, Int>, val fromDirection: Direction)
@@ -65,22 +54,6 @@ enum class Direction(val moveToward: (Pair<Int,Int>) -> Pair<Int, Int>) {
             SOUTH -> NORTH
             EAST -> WEST
             WEST -> EAST
-        }
-
-    fun getInwardCounterClockwise(): Direction =
-        when(this) {
-            NORTH -> EAST
-            SOUTH -> WEST
-            EAST -> SOUTH
-            WEST -> NORTH
-        }
-
-    fun getInwardClockwise(): Direction =
-        when(this) {
-            NORTH -> WEST
-            SOUTH -> EAST
-            EAST -> NORTH
-            WEST -> SOUTH
         }
 
     companion object {
@@ -108,10 +81,6 @@ fun List<List<Char>>.adjacentTo(point: Pair<Int, Int>): List<Pipe> =
 
 fun List<List<Char>>.get(point: Pair<Int, Int>): Char = this[point.first][point.second]
 
-fun List<List<Char>>.hasPosition(pos: Pair<Int, Int>): Boolean {
-    return pos.first >= 0 && pos.first < this.size && pos.second >=0 && pos.second < this.first().size
-}
-
 fun List<List<Char>>.isValidPipe(point: Pair<Int, Int>, dir: Direction): Boolean =
     getOrNull(point.first)?.getOrNull(point.second) != null &&
             PipeType.values().filter { it.directions.contains(dir.getOpposite()) }.map { it.char }.contains(get(point))
@@ -134,8 +103,4 @@ fun List<List<Char>>.getStartPipeWithCorrectType(pathStart: Pipe, pathEnd: Pipe)
     }
     return Pipe(startPipeType.char, startPipe.position, startPipe.fromDirection)
 }
-
-fun Pair<Int, Int>.getPositionsInDirectionWhile(dir: Direction,
-                                                  predicate: (Pair<Int, Int>) -> Boolean): List<Pair<Int, Int>> =
-    generateSequence(this) { pos -> dir.moveToward(pos) }.takeWhile(predicate).toList()
 
