@@ -1,6 +1,5 @@
 package mkuhn.aoc
 
-import mkuhn.aoc.util.Grid
 import mkuhn.aoc.util.Point
 import mkuhn.aoc.util.progressBetween
 import mkuhn.aoc.util.readInput
@@ -21,15 +20,15 @@ fun day11part2test(input: List<String>): Long = input.findDistanceSums(100)
 fun List<String>.findDistanceSums(expansionFactor: Long): Long {
     val emptyRowIdxs = this.indices.filter { idx -> this[idx].all { it == '.' } }
     val emptyColIdxs = this.first().indices.filter { idx -> this.map { it[idx] }.all { it == '.' } }
-
-    val grid = Grid(this.map { it.toList() }) //grid class saved from previous year
-    val galaxyPoints = grid.allPoints().filter { grid.valueAt(it) == '#' }.toSet()
-    val galaxyPointPairs = galaxyPoints.flatMap { g -> galaxyPoints.filter { it != g }.map { setOf(it, g) } }.toSet()
-
+    val galaxyPointPairs = this.allPoints().filter { this[it.x][it.y] == '#' }.toSet().joinToSelf()
     return galaxyPointPairs.sumOf {
         it.first().manhattanDistWithExpansion(it.last(), emptyRowIdxs, emptyColIdxs, expansionFactor)
     }
 }
+
+fun List<String>.allPoints() = this.indices.flatMap { x -> (this.first().indices).map { y -> Point(x, y) } }
+
+fun <T> Set<T>.joinToSelf() = this.flatMap { a -> this.filter { it != a }.map { setOf(it, a) } }.toSet()
 
 fun Point.manhattanDistWithExpansion(p: Point, expRowIdxs: List<Int>, expColIdxs: List<Int>, expFactor: Long): Long {
     return abs(this.x-p.x) + abs(this.y-p.y) +
