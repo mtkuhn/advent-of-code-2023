@@ -8,7 +8,7 @@ import kotlin.math.abs
 fun main() {
     val input = readInput("Day11")
     println(day11part1(input))
-    println(day11part2(input)) //82000210 too low //todo
+    println(day11part2(input))
 }
 
 fun day11part1(input: List<String>): Long = input.findDistanceSums(2)
