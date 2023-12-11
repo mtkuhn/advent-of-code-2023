@@ -19,7 +19,19 @@ internal class Day10Test {
 
     @Test
     fun testPart2() {
-        val testInput = readTestInput("Day10_test")
-        assertEquals(0, day10part2(testInput))
+        val testInput = readTestInput("Day10_test3")
+        assertEquals(4, day10part2(testInput))
+    }
+
+    @Test
+    fun testPart2b() {
+        val testInput = readTestInput("Day10_test4")
+        assertEquals(4, day10part2(testInput))
+    }
+
+    @Test
+    fun testPart2c() {
+        val testInput = readTestInput("Day10_test5")
+        assertEquals(8, day10part2(testInput))
     }
 }
