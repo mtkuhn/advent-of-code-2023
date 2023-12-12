@@ -9,72 +9,57 @@ fun main() {
 }
 
 fun day12part1(input: List<String>): Int {
-    val incompleteArrangements = input.map { line ->
-        ArrangementData("", line.substringBefore(" "),
+    val inputArrangements = input.map { line ->
+        ArrangementData(line.substringBefore(" "),
             line.substringAfter(" ").split(",").map { it.toInt() })
     }
-    val possibleArrangements = incompleteArrangements.map { a ->
-        println("$a") //todo
+    val possibleArrangements = inputArrangements.map { a -> a.findAllPossibleArrangements() }
+    return possibleArrangements.sumOf { it.size }
+}
 
-        val poss = a.findAllPossibleArrangements().apply { this.forEach{ println("  $it") } }
-
-        //todo: remove validation
-        poss.forEach { p ->
-            if(p.known.zip(a.unknown).any { cc -> cc.first != cc.second && cc.second != '?' }) error("doesnt fit")
-            if(p.known.length != a.unknown.length) error("wrong length")
-
-            val regex = ("\\.*"+a.lengths.map { "#{$it}" }.joinToString("\\.+")+"\\.*").toRegex()
-            if(!p.known.matches(regex)) error("groups not found")
-        }
-
-        poss
+fun day12part2(input: List<String>): Int {
+    val inputArrangements = input.map { line ->
+        ArrangementData(line.substringBefore(" "),
+            line.substringAfter(" ").split(",").map { it.toInt() }).unfold()
     }
+    val possibleArrangements = inputArrangements.mapIndexed { i, a -> a.findAllPossibleArrangements().apply { println("$i | ${this.size}") } }
 
     return possibleArrangements.sumOf { it.size }
 }
 
-fun day12part2(input: List<String>): Int =
-    2
-
-data class ArrangementData(val known: String, val unknown: String, val lengths: List<Int>) {
+data class ArrangementData(val unknown: String, val lengths: List<Int>) {
 
     fun findAllPossibleArrangements(): List<ArrangementData> {
         return if(lengths.isEmpty()) return listOf(this)
-        else { findArrangementsForLength(lengths.first()) }
+        else { findArrangementsForGroupOfLength(lengths.first()) }
     }
 
-    private fun findArrangementsForLength(arrLen: Int): List<ArrangementData> {
+    private fun findArrangementsForGroupOfLength(arrLen: Int): List<ArrangementData> {
         val possiblePositions = unknown.indices.windowed(arrLen, partialWindows = false)
-            .filter { w -> w.all { unknown[it] != '.' } &&
-                    w.isBoundedGroup(unknown) &&
-                    !unknown.substring(0, w.first()).contains("#") &&
-                    (lengths.size > 1 || !unknown.substring(w.last()+1).contains("#"))
+            .filter { w ->
+                    w.canBeBounded(unknown) &&
+                    w.all { unknown[it] != '.' } &&
+                    !unknown.substring(0, w.first()).contains("#") && //we can't have extra groups before this
+                    (lengths.size > 1 || !unknown.substring(w.last()+1).contains("#")) && //no trailing groups on last match
+                    //the below for optimization, not correctness
+                    ((unknown.substring(w.last()).length) > (lengths.drop(1).sum())+lengths.size-1) //there's enough space for the remaining groups
             }
 
-        val correctedChars = possiblePositions.map { indices ->
-            val charPos = indices.map { it to '#' }.toMutableList()
-            if(indices.first() > 0) charPos.add(indices.first()-1 to '.')
-            if(indices.last() < unknown.length-1) charPos.add(indices.last()+1 to '.')
-            charPos.sortedBy { it.first }
+        return possiblePositions.flatMap { p ->
+            var newUnknown = unknown.substring(p.last()+1)
+            if(p.last() < unknown.length-1) newUnknown = newUnknown.drop(1)
+            ArrangementData(newUnknown, lengths.drop(1)).findAllPossibleArrangements()
         }
 
-        return correctedChars.flatMap { p ->
-            val newLengths = lengths.drop(1)
-            var newUnknown = unknown.substring(p.last().first+1)
-            var newKnown = known +
-                    unknown.substring(0, p.first().first).replace('?', '.') +
-                    p.map { it.second }.joinToString("")
-            if(newLengths.isEmpty()) {
-                newKnown += newUnknown.replace('?', '.')
-                newUnknown = ""
-            }
-            ArrangementData(newKnown, newUnknown, newLengths).findAllPossibleArrangements()
-        }
     }
 
-    private fun List<Int>.isBoundedGroup(str: String) =
+    private fun List<Int>.canBeBounded(str: String) =
         (first() == 0 || str[first()-1] in "?.") &&
         (last() == str.length-1 || str[last()+1] in "?.")
+
+    fun unfold(): ArrangementData = ArrangementData(
+        (1..5).joinToString("?") { unknown },
+        (1..5).flatMap { lengths })
 }
 
 
