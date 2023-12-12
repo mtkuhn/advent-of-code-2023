@@ -13,9 +13,21 @@ fun day12part1(input: List<String>): Int {
         ArrangementData("", line.substringBefore(" "),
             line.substringAfter(" ").split(",").map { it.toInt() })
     }
-    val possibleArrangements = incompleteArrangements.map {
-        println("$it")
-        it.findAllPossibleArrangements().apply { this.forEach{ println("  $it") } }
+    val possibleArrangements = incompleteArrangements.map { a ->
+        println("$a") //todo
+
+        val poss = a.findAllPossibleArrangements().apply { this.forEach{ println("  $it") } }
+
+        //todo: remove validation
+        poss.forEach { p ->
+            if(p.known.zip(a.unknown).any { cc -> cc.first != cc.second && cc.second != '?' }) error("doesnt fit")
+            if(p.known.length != a.unknown.length) error("wrong length")
+
+            val regex = ("\\.*"+a.lengths.map { "#{$it}" }.joinToString("\\.+")+"\\.*").toRegex()
+            if(!p.known.matches(regex)) error("groups not found")
+        }
+
+        poss
     }
 
     return possibleArrangements.sumOf { it.size }
@@ -35,7 +47,8 @@ data class ArrangementData(val known: String, val unknown: String, val lengths: 
         val possiblePositions = unknown.indices.windowed(arrLen, partialWindows = false)
             .filter { w -> w.all { unknown[it] != '.' } &&
                     w.isBoundedGroup(unknown) &&
-                    !unknown.substring(0, w.first()).contains("#")
+                    !unknown.substring(0, w.first()).contains("#") &&
+                    (lengths.size > 1 || !unknown.substring(w.last()+1).contains("#"))
             }
 
         val correctedChars = possiblePositions.map { indices ->
