@@ -8,7 +8,7 @@ fun main() {
     println(day12part2(input))
 }
 
-fun day12part1(input: List<String>): Int {
+fun day12part1(input: List<String>): Long {
     val inputArrangements = input.map { line ->
         ArrangementData(line.substringBefore(" "),
             line.substringAfter(" ").split(",").map { it.toInt() })
@@ -17,36 +17,30 @@ fun day12part1(input: List<String>): Int {
         a.findAllPossibleArrangements(ArrangementEntry(0, 0))
     }
 
-    possibleArrangements.forEach {
-        println("new")
-        it.forEach { println(" $it") }
-    }
-
-    return possibleArrangements.sumOf { it.size }
+    return possibleArrangements.sumOf { it }
 }
 
-fun day12part2(input: List<String>): Int {
+fun day12part2(input: List<String>): Long {
     val inputArrangements = input.map { line ->
         ArrangementData(line.substringBefore(" "),
             line.substringAfter(" ").split(",").map { it.toInt() }).unfold()
     }
     val possibleArrangements = inputArrangements.mapIndexed { i, a ->
-        a.findAllPossibleArrangements(ArrangementEntry(0, 0)).apply { println("$i | ${this.size}") }
+        a.findAllPossibleArrangements(ArrangementEntry(0, 0)).apply { println("$i | ${this}") }
     }
-    return possibleArrangements.sumOf { it.size }
+    return possibleArrangements.sumOf { it }
 }
 
 data class ArrangementEntry(val strPos: Int, val lenPos: Int)
 
 data class ArrangementData(val springs: String, val lengths: List<Int>) {
 
-    private val cache: MutableMap<ArrangementEntry, List<ArrangementEntry>> = mutableMapOf()
+    private val cache: MutableMap<ArrangementEntry, Long> = mutableMapOf()
 
-    fun findAllPossibleArrangements(entry: ArrangementEntry): List<ArrangementEntry> {
-        return if(entry.lenPos >= lengths.size) listOf(entry)
-        else if(entry.strPos >= springs.length) emptyList()
+    fun findAllPossibleArrangements(entry: ArrangementEntry): Long {
+        return if(entry.lenPos >= lengths.size) 1
+        else if(entry.strPos >= springs.length) 0
         else {
-            val str = springs.substring(entry.strPos)
             if(cache.containsKey(entry)) {
                 //println("cache hit")
                 cache[entry]!!
@@ -59,7 +53,7 @@ data class ArrangementData(val springs: String, val lengths: List<Int>) {
     }
 
 
-    private fun ArrangementEntry.findArrangements(): List<ArrangementEntry> {
+    private fun ArrangementEntry.findArrangements(): Long {
         val stringToEval = springs.substring(strPos)
         val possiblePositions = stringToEval.indices.windowed(lengths[lenPos], partialWindows = false)
             .filter { w ->
@@ -69,12 +63,9 @@ data class ArrangementData(val springs: String, val lengths: List<Int>) {
                     !(lenPos == lengths.size-1 && stringToEval.substring(w.last()+1).contains("#")) //no trailing groups on last match
             }
 
-        return possiblePositions.flatMap { p ->
-            var offset = p.last()+2
-            findAllPossibleArrangements(
-                ArrangementEntry((strPos+offset), lenPos+1))
+        return possiblePositions.sumOf { p ->
+            findAllPossibleArrangements(ArrangementEntry((strPos+p.last()+2), lenPos+1))
         }
-
     }
 
     private fun List<Int>.canBeBounded(str: String) =
