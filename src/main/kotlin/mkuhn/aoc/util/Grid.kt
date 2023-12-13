@@ -48,4 +48,7 @@ open class Grid<T>(private val grid: List<List<T>>) {
     fun xBounds() = grid.indices
 
     fun yBounds() = grid.first().indices
+
+    fun withUpdatedValueAt(pos: Point, new: T): Grid<T> =
+        Grid(grid.map { it.toMutableList() }.toMutableList().apply { this[pos.x][pos.y] = new })
 }
