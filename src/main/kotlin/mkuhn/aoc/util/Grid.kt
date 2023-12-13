@@ -20,6 +20,10 @@ open class Grid<T>(private val grid: List<List<T>>) {
     fun allEast(pos: Point) =
         (pos.x+1 until grid.size).map { Point(it, pos.y) }.sortedBy { it.x }
 
+    fun row(i: Int): List<T> = grid[i]
+
+    fun col(i: Int): List<T> = grid.map { it[i] }
+
     fun isInBounds(pos: Point) = pos.x in xBounds() && pos.y in yBounds()
 
     fun isEdge(pos: Point) =
