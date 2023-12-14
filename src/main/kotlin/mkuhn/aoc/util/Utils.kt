@@ -10,12 +10,14 @@ fun readTestInput(name: String) = File("src/test/resources/", "$name.txt")
 
 fun String.splitToPair(separator: Char) = this.substringBefore(separator) to this.substringAfter(separator)
 
-fun <T> List<T>.splitList(separator: T): List<List<T>> =
+fun <T> List<T>.splitList(matcher: (T) -> Boolean): List<List<T>> =
     this.fold(mutableListOf(mutableListOf<T>())) { acc, a ->
-        if (a == separator) acc += mutableListOf<T>()
+        if(matcher(a)) acc += mutableListOf<T>()
         else acc.last() += a
         acc
     }
+
+fun <T> List<T>.splitList(separator: T): List<List<T>> = this.splitList { it == separator }
 
 fun <T> Collection<Collection<T>>.intersectAll(): Set<T> =
     this.fold(this.first().toSet()) { acc, e -> acc intersect e.toSet() }
