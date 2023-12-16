@@ -1,5 +1,6 @@
 package mkuhn.aoc
 
+import mkuhn.aoc.util.Direction
 import mkuhn.aoc.util.readInput
 
 fun main() {
@@ -42,27 +43,6 @@ fun day10part2(input: List<String>): Int {
 
 data class Pipe(val char: Char, val position: Pair<Int, Int>, val fromDirection: Direction)
 
-enum class Direction(val moveToward: (Pair<Int,Int>) -> Pair<Int, Int>) {
-    NORTH({p -> p.first-1 to p.second}),
-    EAST({p -> p.first to p.second+1}),
-    SOUTH({p -> p.first+1 to p.second}),
-    WEST({p -> p.first to p.second-1});
-
-    fun getOpposite(): Direction =
-        when(this) {
-            NORTH -> SOUTH
-            SOUTH -> NORTH
-            EAST -> WEST
-            WEST -> EAST
-        }
-
-    companion object {
-        val pipeMovementMap = PipeType.values().flatMap { t ->
-            t.directions.map { d -> (t.char to d) to t.directions.first { it != d } }
-        }.toMap()
-    }
-}
-
 enum class PipeType(val char: Char, val directions: List<Direction>) {
     VERTICAL('|', listOf(Direction.NORTH, Direction.SOUTH)),
     HORIZONTAL('-', listOf(Direction.EAST, Direction.WEST)),
@@ -75,7 +55,7 @@ enum class PipeType(val char: Char, val directions: List<Direction>) {
 
 fun List<List<Char>>.adjacentTo(point: Pair<Int, Int>): List<Pipe> =
     Direction.values().mapNotNull { dir ->
-        dir.moveToward(point).takeIf { isValidPipe(it, dir) }
+        dir.moveFrom(point).takeIf { isValidPipe(it, dir) }
             ?.let { Pipe(this.get(it), it, dir.getOpposite()) }
     }
 
@@ -88,9 +68,13 @@ fun List<List<Char>>.isValidPipe(point: Pair<Int, Int>, dir: Direction): Boolean
 fun List<List<Char>>.pipeLoopSequence(start: Pipe) =
     generateSequence(start) { p -> this.getNextPipePosition(p) }
 
+val pipeMovementMap = PipeType.values().flatMap { t ->
+    t.directions.map { d -> (t.char to d) to t.directions.first { it != d } }
+}.toMap()
+
 fun List<List<Char>>.getNextPipePosition(p: Pipe): Pipe {
-    val dir = Direction.pipeMovementMap[p.char to p.fromDirection]?:error("dead end pipe ${p.char} ${p.fromDirection} | $p")
-    val newPos = dir.moveToward(p.position)
+    val dir = pipeMovementMap[p.char to p.fromDirection]?:error("dead end pipe ${p.char} ${p.fromDirection} | $p")
+    val newPos = dir.moveFrom(p.position)
     return Pipe(this.get(newPos), newPos, dir.getOpposite())
 }
 
