@@ -11,14 +11,14 @@ fun main() {
 
 fun day16part1(input: List<String>): Int {
     val tiles = input.map { it.toList() }
-    val beam = initFromExclusive(BeamNode(0 to -1, listOf(Direction.EAST)), tiles)
+    val beam = beamFrom(BeamNode(0 to 0, listOf(Direction.EAST)), tiles)
     return beam.map { it.fromPoint }.toSet().size
 }
 
 fun day16part2(input: List<String>): Int {
     val tiles = input.map { it.toList() }
-    val beams = tiles.outsideEdgeNodes().map { initNode ->
-        initFromExclusive(initNode, tiles).map { it.fromPoint }.toSet().size }
+    val beams = tiles.edgeNodes().map { initNode ->
+        beamFrom(initNode, tiles).map { it.fromPoint }.toSet().size }
     return beams.max()
 }
 
@@ -29,7 +29,7 @@ data class BeamNode(val fromPoint : Pair<Int, Int>, val directions: List<Directi
             .map { pd -> BeamNode(pd.first, tiles[pd.first.first][pd.first.second].getNewDirections(pd.second)) }
 }
 
-fun initFromExclusive(initNode: BeamNode, tiles: List<List<Char>>): Set<BeamNode> {
+fun beamFrom(initNode: BeamNode, tiles: List<List<Char>>): Set<BeamNode> {
     val nodes = mutableSetOf(initNode)
     while(true) {
         val expanded = nodes.flatMap { it.next(tiles) }
@@ -37,17 +37,17 @@ fun initFromExclusive(initNode: BeamNode, tiles: List<List<Char>>): Set<BeamNode
         if(netNew.isEmpty()) break
         nodes += netNew
     }
-    return nodes.minus(initNode)
+    return nodes
 }
 
 fun List<List<Char>>.containsPoint(p: Pair<Int, Int>) = p.first >= 0 && p.second >=0 &&
         p.first < this.size && p.second < this.first().size
 
-fun List<List<Char>>.outsideEdgeNodes(): List<BeamNode> =
-    (this.first().indices).map { col -> BeamNode(this.indices.first-1 to col, listOf(Direction.SOUTH)) } +
-            (this.first().indices).map { col -> BeamNode(this.indices.last+1 to col, listOf(Direction.NORTH)) } +
-            (this.indices).map { row -> BeamNode(row to this.first().indices.first-1, listOf(Direction.EAST)) }  +
-            (this.indices).map { row -> BeamNode(row to this.first().indices.last+1, listOf(Direction.WEST)) }
+fun List<List<Char>>.edgeNodes(): List<BeamNode> =
+    (this.first().indices).map { col -> BeamNode(this.indices.first to col, listOf(Direction.SOUTH)) } +
+            (this.first().indices).map { col -> BeamNode(this.indices.last to col, listOf(Direction.NORTH)) } +
+            (this.indices).map { row -> BeamNode(row to this.first().indices.first, listOf(Direction.EAST)) }  +
+            (this.indices).map { row -> BeamNode(row to this.first().indices.last, listOf(Direction.WEST)) }
 
 fun Char.getNewDirections(enteringDirection: Direction): List<Direction> =
     if(enteringDirection == Direction.NORTH && this == '-') listOf(Direction.EAST, Direction.WEST)
