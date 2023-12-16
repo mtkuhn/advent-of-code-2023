@@ -11,55 +11,56 @@ fun main() {
 
 fun day16part1(input: List<String>): Int {
     val tiles = input.map { it.toList() }
-    val beam = beamFrom(BeamNode(0 to 0, listOf(Direction.EAST)), tiles)
-    return beam.map { it.fromPoint }.toSet().size
+    val init = BeamNode(null, 0 to 0, Direction.EAST)
+    return init.beam(tiles).map { it.point }.toSet().size
 }
 
 fun day16part2(input: List<String>): Int {
     val tiles = input.map { it.toList() }
-    val beams = tiles.edgeNodes().map { initNode ->
-        beamFrom(initNode, tiles).map { it.fromPoint }.toSet().size }
-    return beams.max()
+    val beamSizes = tiles.edgeNodes().map { e ->  e.beam(tiles).map { it.point }.toSet().size }
+    return beamSizes.max()
 }
 
-data class BeamNode(val fromPoint : Pair<Int, Int>, val directions: List<Direction>) {
+data class BeamNode(val preceding: BeamNode?, val point: Pair<Int, Int>, val incomingDirection: Direction) {
     fun next(tiles: List<List<Char>>): List<BeamNode> =
-        directions.map { dir -> dir.moveFrom(fromPoint) to dir }
-            .filter { tiles.containsPoint(it.first) }
-            .map { pd -> BeamNode(pd.first, tiles[pd.first.first][pd.first.second].getNewDirections(pd.second)) }
-}
+        tiles[point.first][point.second]
+            .getNewDirections(incomingDirection)
+            .map { dir -> BeamNode(this, dir.moveFrom(point), dir) }
+            .filter { tiles.containsPoint(it.point) }
+            .filter { !it.precedingBeamContains(it) }
 
-fun beamFrom(initNode: BeamNode, tiles: List<List<Char>>): Set<BeamNode> {
-    val nodes = mutableSetOf(initNode)
-    while(true) {
-        val expanded = nodes.flatMap { it.next(tiles) }
-        val netNew = expanded.minus(nodes)
-        if(netNew.isEmpty()) break
-        nodes += netNew
+    fun beam(tiles: List<List<Char>>): Set<BeamNode> {
+        val beamSeq = generateSequence(listOf(this)) { branches -> branches.flatMap { bn -> bn.next(tiles) } }
+        return beamSeq.takeWhile { it.isNotEmpty() }.flatten().toSet()
     }
-    return nodes
+
+    private fun matches(beamNode: BeamNode) = this.incomingDirection == beamNode.incomingDirection && this.point == beamNode.point
+
+    private fun precedingBeamContains(beamNode: BeamNode): Boolean = preceding?.matches(beamNode)?:false || preceding?.precedingBeamContains(beamNode)?:false
 }
 
 fun List<List<Char>>.containsPoint(p: Pair<Int, Int>) = p.first >= 0 && p.second >=0 &&
         p.first < this.size && p.second < this.first().size
 
 fun List<List<Char>>.edgeNodes(): List<BeamNode> =
-    (this.first().indices).map { col -> BeamNode(this.indices.first to col, listOf(Direction.SOUTH)) } +
-            (this.first().indices).map { col -> BeamNode(this.indices.last to col, listOf(Direction.NORTH)) } +
-            (this.indices).map { row -> BeamNode(row to this.first().indices.first, listOf(Direction.EAST)) }  +
-            (this.indices).map { row -> BeamNode(row to this.first().indices.last, listOf(Direction.WEST)) }
+    (this.first().indices).map { col -> BeamNode(null, this.indices.first to col, Direction.SOUTH) } +
+            (this.first().indices).map { col -> BeamNode(null, this.indices.last to col, Direction.NORTH) } +
+            (this.indices).map { row -> BeamNode(null, row to this.first().indices.first, Direction.EAST) }  +
+            (this.indices).map { row -> BeamNode(null, row to this.first().indices.last, Direction.WEST) }
 
 fun Char.getNewDirections(enteringDirection: Direction): List<Direction> =
-    if(enteringDirection == Direction.NORTH && this == '-') listOf(Direction.EAST, Direction.WEST)
-    else if(enteringDirection == Direction.NORTH && this == '\\') listOf(Direction.WEST)
-    else if(enteringDirection == Direction.NORTH && this == '/') listOf(Direction.EAST)
-    else if(enteringDirection == Direction.SOUTH && this == '-') listOf(Direction.EAST, Direction.WEST)
-    else if(enteringDirection == Direction.SOUTH && this == '\\') listOf(Direction.EAST)
-    else if(enteringDirection == Direction.SOUTH && this == '/') listOf(Direction.WEST)
-    else if(enteringDirection == Direction.EAST && this == '|') listOf(Direction.NORTH, Direction.SOUTH)
-    else if(enteringDirection == Direction.EAST && this == '\\') listOf(Direction.SOUTH)
-    else if(enteringDirection == Direction.EAST && this == '/') listOf(Direction.NORTH)
-    else if(enteringDirection == Direction.WEST && this == '|') listOf(Direction.NORTH, Direction.SOUTH)
-    else if(enteringDirection == Direction.WEST && this == '\\') listOf(Direction.NORTH)
-    else if(enteringDirection == Direction.WEST && this == '/') listOf(Direction.SOUTH)
-    else listOf(enteringDirection)
+    when(enteringDirection to this) {
+        Direction.NORTH to '-' -> listOf(Direction.EAST, Direction.WEST)
+        Direction.NORTH to '\\' -> listOf(Direction.WEST)
+        Direction.NORTH to '/' -> listOf(Direction.EAST)
+        Direction.SOUTH to '-' -> listOf(Direction.EAST, Direction.WEST)
+        Direction.SOUTH to '\\' -> listOf(Direction.EAST)
+        Direction.SOUTH to '/' -> listOf(Direction.WEST)
+        Direction.EAST to '|' -> listOf(Direction.NORTH, Direction.SOUTH)
+        Direction.EAST to '\\' -> listOf(Direction.SOUTH)
+        Direction.EAST to '/' -> listOf(Direction.NORTH)
+        Direction.WEST to '|' -> listOf(Direction.NORTH, Direction.SOUTH)
+        Direction.WEST to '\\' -> listOf(Direction.NORTH)
+        Direction.WEST to '/' -> listOf(Direction.SOUTH)
+        else -> listOf(enteringDirection)
+    }
