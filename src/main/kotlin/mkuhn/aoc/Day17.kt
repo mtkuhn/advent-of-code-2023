@@ -12,45 +12,69 @@ fun main() {
 }
 
 fun day17part1(input: List<String>): Int {
-    val heatMap = Grid(input.map { l -> l.map { it.digitToInt() } })
+    val startTime = System.currentTimeMillis()
+    val grid = Grid(input.map { l -> l.map { it.digitToInt() } })
+    val condition = { edge: Edge, dir: Direction ->
+        edge.direction != dir || edge.directionCount <= 2
+    }
+    val shortPath = grid.findShortestPathTo(condition)
+
+    println("Time: ${System.currentTimeMillis()-startTime}")
+    return shortPath.heatLoss
+}
+
+fun day17part2(input: List<String>): Int {
+    val startTime = System.currentTimeMillis()
+    val grid = Grid(input.map { l -> l.map { it.digitToInt() } })
+    val condition = { edge: Edge, dir: Direction ->
+        if(edge.direction != dir && edge.directionCount < 4) false
+        else if(edge.direction == dir && edge.directionCount >= 10) false
+        else true
+    }
+    val shortPath = grid.findShortestPathTo(condition)
+
+    println("Time: ${System.currentTimeMillis()-startTime}")
+    return shortPath.heatLoss
+}
+
+data class Edge(val point: Point, val direction: Direction, val directionCount: Int)
+
+data class Path(val edge: Edge, val heatLoss: Int) {
+    fun getPossibleEdges(heatMap: Grid<Int>, crucibleCondition: (Edge, Direction) -> Boolean): List<Edge> =
+        Direction.values()
+            .filter { d -> d != edge.direction.getOpposite() }
+            .filter { d -> crucibleCondition(edge, d) }
+            .map { d -> d to d.moveFrom(edge.point) }
+            .filter { heatMap.isInBounds(it.second) }
+            .map { step -> Edge(step.second, step.first, if(edge.direction == step.first) edge.directionCount+1 else 1) }
+}
+
+fun Grid<Int>.findShortestPathTo(crucibleCondition: (Edge, Direction) -> Boolean): Path {
     val startPoint = Point(0, 0)
-    val goal = Point(heatMap.xBounds().last, heatMap.yBounds().last)
-    val startPath = HeatMapPath(startPoint, emptyList(), 0, 10000)
-    val estimateMap = heatMap.allPoints().associateWith {
-        estimateMinimumRemainingHeatLoss(it, heatMap) + it.manhattanDistance(goal)
-    }
-    println("estimate done: $estimateMap")
+    val goal = Point(xBounds().last, yBounds().last)
+    val startEdge = Edge(startPoint, Direction.NORTH, 0)
+    val seen = mutableSetOf<Edge>()
+    val pathQueue = PriorityQueue<Path>() { a, b -> a.heatLoss - b.heatLoss }
 
-    val paths = PriorityQueue<HeatMapPath> { a, b -> a.score - b.score }
-    paths.add(startPath)
+    seen += startEdge
+    pathQueue += Path(startEdge, 0)
 
-    val best = paths.findBestPath(heatMap, estimateMap, goal)
+    while(pathQueue.isNotEmpty()) {
+        val curr = pathQueue.poll()
 
-    return best.heatLoss
-}
+        if(curr.edge.point == goal) return curr
 
-fun day17part2(input: List<String>): Int =
-    2
+        val nextEdges = curr.getPossibleEdges(this, crucibleCondition).filter { it !in seen }
+        val nextPaths = nextEdges.map { Path(it, curr.heatLoss + valueAt(it.point)) }
 
-fun estimateMinimumRemainingHeatLoss(point: Point, heatMap: Grid<Int>): Int {
-    //val xSum = heatMap.allEast(point).sumOf { p -> (heatMap.allSouth(p)+p).minOfOrNull { heatMap.valueAt(it) }?:0 }
-    //val ySum = heatMap.allSouth(point).sumOf { p -> (heatMap.allEast(p)+p).minOfOrNull { heatMap.valueAt(it) }?:0 }
-
-    val xSum = (point.x+1 .. heatMap.xBounds().last).sumOf { x -> heatMap.allPoints().filter { it.x == x }.minOfOrNull { heatMap.valueAt(it) }?:0 }
-    val ySum = (point.y+1 .. heatMap.yBounds().last).sumOf { y -> heatMap.allPoints().filter { it.y == y }.minOfOrNull { heatMap.valueAt(it) }?:0 }
-
-    return xSum + ySum
-}
-
-data class HeatMapPath(val point: Point, val directions: List<Direction>, val heatLoss: Int, val score: Int) {
-    companion object {
-        fun score(heatLoss: Int, point: Point, estimateMap: Map<Point, Int>): Int {
-            return heatLoss + (estimateMap[point]?:0)
-        }
+        seen += nextEdges
+        pathQueue += nextPaths
+        pathQueue -= curr
     }
 
-    override fun toString() = "[path loss=$heatLoss, s=$score, p=$point, d=${directions.lastOrNull()}]"
+    error("no path found")
 }
+
 
 enum class Direction(val moveFrom: (Point) -> Point) {
     NORTH({ p -> Point(p.x, p.y-1) }),
@@ -65,36 +89,4 @@ enum class Direction(val moveFrom: (Point) -> Point) {
             EAST -> WEST
             WEST -> EAST
         }
-}
-
-fun PriorityQueue<HeatMapPath>.findBestPath(heatMap: Grid<Int>, estimateMap: Map<Point, Int>, goal: Point): HeatMapPath {
-    var i = 0 //todo
-    while(i < 1000000) {
-        i++
-        val best = this.poll()
-        if(i%10000 == 0) println("best: $best | totalPaths: ${this.size}")
-        val new = best.getPossibleMoves(heatMap, estimateMap, goal)
-        val finished = new.filter { it.point == goal }.minByOrNull { it.heatLoss }
-
-        if(finished != null) return finished
-        else { new.forEach { this.offer(it) } }
-    }
-    error("too many iterations")
-}
-
-fun HeatMapPath.getPossibleMoves(heatMap: Grid<Int>, estimateMap: Map<Point, Int>, goal: Point): List<HeatMapPath> {
-    val validDirections = Direction.values()
-        .filter { d -> d != directions.lastOrNull()?.getOpposite() }
-        .filter { d -> directions.size < 3 || !(directions.takeLast(3).all { it == d }) }
-
-    val validPoints = validDirections
-        .map { d -> d to d.moveFrom(point) }
-        .filter { heatMap.isInBounds(it.second) }
-
-    return validPoints.map { step ->
-        HeatMapPath(step.second,
-            directions.plus(step.first).takeLast(3),
-            heatLoss + heatMap.valueAt(step.second),
-            HeatMapPath.score(heatLoss + heatMap.valueAt(step.second), step.second, estimateMap))
-    }
 }
