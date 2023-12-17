@@ -27,7 +27,8 @@ fun day17part2(input: List<String>): Int {
     val startTime = System.currentTimeMillis()
     val grid = Grid(input.map { l -> l.map { it.digitToInt() } })
     val condition = { edge: Edge, dir: Direction ->
-        if(edge.direction != dir && edge.directionCount < 4) false
+        if(edge.directionCount == 0) true
+        else if(edge.direction != dir && edge.directionCount < 4) false
         else if(edge.direction == dir && edge.directionCount >= 10) false
         else true
     }
@@ -54,7 +55,7 @@ fun Grid<Int>.findShortestPathTo(crucibleCondition: (Edge, Direction) -> Boolean
     val goal = Point(xBounds().last, yBounds().last)
     val startEdge = Edge(startPoint, Direction.NORTH, 0)
     val seen = mutableSetOf<Edge>()
-    val pathQueue = PriorityQueue<Path>() { a, b -> a.heatLoss - b.heatLoss }
+    val pathQueue = PriorityQueue<Path> { a, b -> a.heatLoss - b.heatLoss }
 
     seen += startEdge
     pathQueue += Path(startEdge, 0)
