@@ -27,7 +27,7 @@ fun day17part2(input: List<String>): Int {
     val startTime = System.currentTimeMillis()
     val grid = Grid(input.map { l -> l.map { it.digitToInt() } })
     val condition = { edge: Edge, dir: Direction ->
-        if(edge.directionCount == 0) true
+        if(edge.directionCount == 0 || edge.direction == null) true
         else if(edge.direction != dir && edge.directionCount < 4) false
         else if(edge.direction == dir && edge.directionCount >= 10) false
         else true
@@ -38,12 +38,12 @@ fun day17part2(input: List<String>): Int {
     return shortPath.heatLoss
 }
 
-data class Edge(val point: Point, val direction: Direction, val directionCount: Int)
+data class Edge(val point: Point, val direction: Direction?, val directionCount: Int)
 
 data class Path(val edge: Edge, val heatLoss: Int) {
     fun getPossibleEdges(heatMap: Grid<Int>, crucibleCondition: (Edge, Direction) -> Boolean): List<Edge> =
         Direction.values()
-            .filter { d -> d != edge.direction.getOpposite() }
+            .filter { d -> d != edge.direction?.getOpposite() }
             .filter { d -> crucibleCondition(edge, d) }
             .map { d -> d to d.moveFrom(edge.point) }
             .filter { heatMap.isInBounds(it.second) }
@@ -53,7 +53,7 @@ data class Path(val edge: Edge, val heatLoss: Int) {
 fun Grid<Int>.findShortestPathTo(crucibleCondition: (Edge, Direction) -> Boolean): Path {
     val startPoint = Point(0, 0)
     val goal = Point(xBounds().last, yBounds().last)
-    val startEdge = Edge(startPoint, Direction.NORTH, 0)
+    val startEdge = Edge(startPoint, null, 0)
     val seen = mutableSetOf<Edge>()
     val pathQueue = PriorityQueue<Path> { a, b -> a.heatLoss - b.heatLoss }
 
