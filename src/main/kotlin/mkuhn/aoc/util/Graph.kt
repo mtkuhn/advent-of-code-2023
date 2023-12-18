@@ -11,7 +11,7 @@ abstract class Graph<T:GraphNode> {
 
     fun findShortestPath(origin: T, goalCondition: (T) -> Boolean): GraphPath<T> {
         val seen = mutableSetOf<T>()
-        val pathQueue = PriorityQueue<GraphPath<T>> { a, b -> a.cost - b.cost }
+        val pathQueue = PriorityQueue<GraphPath<T>> { a, b -> a.cost - b.cost } //todo: add estimate function for A*
 
         seen += origin
         pathQueue += GraphPath(origin, 0)
