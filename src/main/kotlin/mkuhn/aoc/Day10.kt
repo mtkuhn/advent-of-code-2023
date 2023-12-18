@@ -1,6 +1,5 @@
 package mkuhn.aoc
 
-import mkuhn.aoc.util.Direction
 import mkuhn.aoc.util.readInput
 
 fun main() {
@@ -41,27 +40,42 @@ fun day10part2(input: List<String>): Int {
     return x.size
 }
 
-data class Pipe(val char: Char, val position: Pair<Int, Int>, val fromDirection: Direction)
+data class Pipe(val char: Char, val position: Pair<Int, Int>, val fromDirection: PipeDirection)
 
-enum class PipeType(val char: Char, val directions: List<Direction>) {
-    VERTICAL('|', listOf(Direction.NORTH, Direction.SOUTH)),
-    HORIZONTAL('-', listOf(Direction.EAST, Direction.WEST)),
-    SOUTHWEST('L', listOf(Direction.NORTH, Direction.EAST)),
-    SOUTHEAST('J', listOf(Direction.NORTH, Direction.WEST)),
-    NORTHEAST('7', listOf(Direction.SOUTH, Direction.WEST)),
-    NORTHWEST('F', listOf(Direction.SOUTH, Direction.EAST)),
-    START('S', Direction.values().toList())
+enum class PipeType(val char: Char, val directions: List<PipeDirection>) {
+    VERTICAL('|', listOf(PipeDirection.NORTH, PipeDirection.SOUTH)),
+    HORIZONTAL('-', listOf(PipeDirection.EAST, PipeDirection.WEST)),
+    SOUTHWEST('L', listOf(PipeDirection.NORTH, PipeDirection.EAST)),
+    SOUTHEAST('J', listOf(PipeDirection.NORTH, PipeDirection.WEST)),
+    NORTHEAST('7', listOf(PipeDirection.SOUTH, PipeDirection.WEST)),
+    NORTHWEST('F', listOf(PipeDirection.SOUTH, PipeDirection.EAST)),
+    START('S', PipeDirection.values().toList())
+}
+
+enum class PipeDirection(val moveFrom: (Pair<Int,Int>) -> Pair<Int, Int>) {
+    NORTH({ p -> p.first - 1 to p.second }),
+    EAST({ p -> p.first to p.second + 1 }),
+    SOUTH({ p -> p.first + 1 to p.second }),
+    WEST({ p -> p.first to p.second - 1 });
+
+    fun getOpposite(): PipeDirection =
+        when (this) {
+            NORTH -> SOUTH
+            SOUTH -> NORTH
+            EAST -> WEST
+            WEST -> EAST
+        }
 }
 
 fun List<List<Char>>.adjacentTo(point: Pair<Int, Int>): List<Pipe> =
-    Direction.values().mapNotNull { dir ->
+    PipeDirection.values().mapNotNull { dir ->
         dir.moveFrom(point).takeIf { isValidPipe(it, dir) }
             ?.let { Pipe(this.get(it), it, dir.getOpposite()) }
     }
 
 fun List<List<Char>>.get(point: Pair<Int, Int>): Char = this[point.first][point.second]
 
-fun List<List<Char>>.isValidPipe(point: Pair<Int, Int>, dir: Direction): Boolean =
+fun List<List<Char>>.isValidPipe(point: Pair<Int, Int>, dir: PipeDirection): Boolean =
     getOrNull(point.first)?.getOrNull(point.second) != null &&
             PipeType.values().filter { it.directions.contains(dir.getOpposite()) }.map { it.char }.contains(get(point))
 

@@ -54,6 +54,8 @@ inline fun <T> Sequence<T>.takeWhileInclusive(predicate: (T) -> Boolean): List<T
 
 fun Int.progressBetween(i: Int) = IntProgression.fromClosedRange(this, i, if(this > i) -1 else 1)
 
+fun Int.orderedRangeBetween(i: Int) = if(this < i) this .. i else i .. this
+
 //stolen shamelessly from Todd
 infix fun IntRange.fullyOverlaps(other: IntRange): Boolean =
     first <= other.first && last >= other.last

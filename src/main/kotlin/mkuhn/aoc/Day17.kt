@@ -42,18 +42,3 @@ class CrucibleGraph(private val grid: Grid<Int>, private val neighborCondition: 
             .filter { grid.isInBounds(it.second) }
             .map { step -> CrucibleNode(step.second, step.first, if(node.direction == step.first) node.directionCount+1 else 1, grid.valueAt(step.second)) }
 }
-
-enum class Direction(val moveFrom: (Point) -> Point) {
-    NORTH({ p -> Point(p.x, p.y-1) }),
-    EAST({ p -> Point(p.x+1, p.y) }),
-    SOUTH({ p -> Point(p.x, p.y+1) }),
-    WEST({ p -> Point(p.x-1, p.y) });
-
-    fun getOpposite(): Direction =
-        when (this) {
-            NORTH -> SOUTH
-            SOUTH -> NORTH
-            EAST -> WEST
-            WEST -> EAST
-        }
-}
