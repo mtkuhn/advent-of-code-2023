@@ -6,6 +6,8 @@ data class Point(val x: Int, val y: Int) {
     fun manhattanDistance(p: Point) = abs(this.x-p.x) + abs(this.y-p.y)
 }
 
+data class LongPoint(val x: Long, val y: Long)
+
 open class Grid<T>(private val grid: List<List<T>>) {
 
     fun allNorth(pos: Point) =
