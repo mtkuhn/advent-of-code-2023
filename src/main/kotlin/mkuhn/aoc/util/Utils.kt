@@ -92,3 +92,21 @@ infix fun LongRange.intersect(other: LongRange): LongRange? =
     else if (this overlaps other) this.first.coerceAtLeast(other.first) .. this.last.coerceAtMost(other.last)
     else null
 
+infix fun IntRange.rangeMinus(subtract: IntRange): List<IntRange> {
+    return if(subtract fullyOverlaps this) emptyList()
+    else if(this intersect subtract == null) listOf(this)
+    else {
+        val differences = mutableListOf<IntRange>()
+        if(this.first < subtract.first) differences.add(this.first until subtract.first)
+        if(this.last > subtract.last) differences.add((subtract.last+1) .. this.last)
+        differences
+    }
+}
+
+infix fun IntRange.intersect(other: IntRange?): IntRange? =
+    if (other == null) null
+    else if (this fullyOverlaps other) other
+    else if (other fullyOverlaps this) this
+    else if (this overlaps other) this.first.coerceAtLeast(other.first) .. this.last.coerceAtMost(other.last)
+    else null
+
