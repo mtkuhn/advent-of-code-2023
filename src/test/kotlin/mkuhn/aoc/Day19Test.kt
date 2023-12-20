@@ -17,4 +17,13 @@ internal class Day19Test {
         val testInput = readTestInput("Day19_test")
         assertEquals(167409079868000, day19part2(testInput))
     }
+
+    @Test
+    fun testVolumeSplit() {
+        val a = Volume4D(0..10, 0..10, 0..10, 0..10, "base")
+        val r = Volume4D(2..4, null, 3 .. 5, null, "split")
+
+        a.splitOn(r).forEach { println(it) }
+
+    }
 }

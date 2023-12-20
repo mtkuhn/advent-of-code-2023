@@ -110,3 +110,5 @@ infix fun IntRange.intersect(other: IntRange?): IntRange? =
     else if (this overlaps other) this.first.coerceAtLeast(other.first) .. this.last.coerceAtMost(other.last)
     else null
 
+fun IntRange.size() = this.last - this.first + 1
+

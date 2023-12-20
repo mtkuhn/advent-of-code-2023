@@ -11,9 +11,9 @@ fun main() {
 fun day19part1(input: List<String>): Int {
     val split = input.splitList("")
     val acceptanceVolumes = split.first()
-        .associate { it.toWorkflow() }
-        .rulesToResultSpaces()
-        .findAcceptanceSpaces()
+        .associate { it.toRuleListMap() }
+        .rulesToWorkflowVolumes()
+        .combineToAcceptanceVolumes()
 
     val parts = split.last().map { line ->
         line.drop(1).dropLast(1)
@@ -28,14 +28,14 @@ fun day19part1(input: List<String>): Int {
 fun day19part2(input: List<String>): Long {
     val split = input.splitList("")
     val acceptanceVolumes = split.first()
-        .associate { it.toWorkflow() }
-        .rulesToResultSpaces()
-        .findAcceptanceSpaces()
+        .associate { it.toRuleListMap() }
+        .rulesToWorkflowVolumes()
+        .combineToAcceptanceVolumes()
 
     return acceptanceVolumes.sumOf { it.volume() }
 }
 
-fun Map<String, List<Volume4D>>.findAcceptanceSpaces(): List<Volume4D> {
+fun Map<String, List<Volume4D>>.combineToAcceptanceVolumes(): List<Volume4D> {
     var working = this["in"]!!.toMutableList()
     val accepted = mutableListOf<Volume4D>()
     while(working.isNotEmpty()) {
@@ -47,13 +47,43 @@ fun Map<String, List<Volume4D>>.findAcceptanceSpaces(): List<Volume4D> {
     return accepted
 }
 
-fun Map<String, List<Volume4D>>.rulesToResultSpaces(): Map<String, List<Volume4D>> =
+val maxRange = 1.. 4000
+
+fun Map<String, List<Volume4D>>.rulesToWorkflowVolumes(): Map<String, List<Volume4D>> =
     this.map { entry ->
         entry.key to entry.value.reversed()
             .fold(emptyList<Volume4D>()) { acc, rule ->
                 if(acc.isEmpty()) listOf(rule) else acc.flatMap { it.splitOn(rule) }
             }
     }.toMap()
+
+fun String.toRuleListMap(): Pair<String, List<Volume4D>> {
+    val name = substringBefore("{")
+    val rules = substringAfter("{")
+        .dropLast(1)
+        .split(",")
+        .map { it.toRule() }
+    return name to rules
+}
+
+fun String.toRule(): Volume4D =
+    "(.)([><])(\\d+):(.*)".toRegex().matchEntire(this)?.destructured
+        ?.let { (ratingType, comp, value, res) ->
+            Volume4D(
+                if(ratingType == "x") intRangeFrom(comp, value.toInt()) else null,
+                if(ratingType == "m") intRangeFrom(comp, value.toInt()) else null,
+                if(ratingType == "a") intRangeFrom(comp, value.toInt()) else null,
+                if(ratingType == "s") intRangeFrom(comp, value.toInt()) else null,
+                res
+            )
+        }?: Volume4D(maxRange, maxRange, maxRange, maxRange, this)
+
+fun intRangeFrom(comparator: String, right: Int) =
+    when(comparator) {
+        ">" -> (right+1 .. maxRange.last)
+        "<" -> (maxRange.first until right)
+        else -> error("Invalid comparison $comparator")
+    }
 
 data class Volume4D(val xRange: IntRange?, val mRange: IntRange?, val aRange: IntRange?, val sRange: IntRange?, val result: String) {
 
@@ -100,35 +130,3 @@ data class Volume4D(val xRange: IntRange?, val mRange: IntRange?, val aRange: In
         if(thisRange != null && thatRange != null) (thisRange rangeMinus thatRange)
         else listOf(thisRange)
 }
-
-fun IntRange.size() = this.last - this.first
-
-val maxRange = 1.. 4000
-
-fun String.toWorkflow(): Pair<String, List<Volume4D>> {
-    val name = substringBefore("{")
-    val rules = substringAfter("{")
-        .dropLast(1)
-        .split(",")
-        .map { it.toRule() }
-    return name to rules
-}
-
-fun String.toRule(): Volume4D =
-    "(.)([><])(\\d+):(.*)".toRegex().matchEntire(this)?.destructured
-        ?.let { (ratingType, comp, value, res) ->
-            Volume4D(
-                if(ratingType == "x") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "m") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "a") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "s") intRangeFrom(comp, value.toInt()) else null,
-                res
-            )
-        }?: Volume4D(maxRange, maxRange, maxRange, maxRange, this)
-
-fun intRangeFrom(comparator: String, right: Int) =
-    when(comparator) {
-        ">" -> (right .. maxRange.last)
-        "<" -> (maxRange.first .. right)
-        else -> error("Invalid comparison $comparator")
-    }
