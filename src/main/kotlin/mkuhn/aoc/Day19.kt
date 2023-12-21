@@ -30,6 +30,7 @@ fun day19part2(input: List<String>): Long {
     val acceptanceVolumes = split.first()
         .associate { it.toRuleListMap() }
         .rulesToWorkflowVolumes()
+        .apply { this.values.forEach { if(it.sumOf { a -> a.volume() } != 256000000000000) error("bad volume") } }
         .combineToAcceptanceVolumes()
 
     return acceptanceVolumes.sumOf { it.volume() }
@@ -49,15 +50,15 @@ fun Map<String, List<Volume4D>>.combineToAcceptanceVolumes(): List<Volume4D> {
 
 val maxRange = 1.. 4000
 
-fun Map<String, List<Volume4D>>.rulesToWorkflowVolumes(): Map<String, List<Volume4D>> =
+fun Map<String, List<Rule>>.rulesToWorkflowVolumes(): Map<String, List<Volume4D>> =
     this.map { entry ->
         entry.key to entry.value.reversed()
-            .fold(emptyList<Volume4D>()) { acc, rule ->
-                if(acc.isEmpty()) listOf(rule) else acc.flatMap { it.splitOn(rule) }
+            .fold(listOf(Volume4D(maxRange, maxRange, maxRange, maxRange, "unassigned"))) { acc, rule ->
+                acc.flatMap { it.splitOn(rule) }
             }
     }.toMap()
 
-fun String.toRuleListMap(): Pair<String, List<Volume4D>> {
+fun String.toRuleListMap(): Pair<String, List<Rule>> {
     val name = substringBefore("{")
     val rules = substringAfter("{")
         .dropLast(1)
@@ -66,17 +67,11 @@ fun String.toRuleListMap(): Pair<String, List<Volume4D>> {
     return name to rules
 }
 
-fun String.toRule(): Volume4D =
+fun String.toRule(): Rule =
     "(.)([><])(\\d+):(.*)".toRegex().matchEntire(this)?.destructured
         ?.let { (ratingType, comp, value, res) ->
-            Volume4D(
-                if(ratingType == "x") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "m") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "a") intRangeFrom(comp, value.toInt()) else null,
-                if(ratingType == "s") intRangeFrom(comp, value.toInt()) else null,
-                res
-            )
-        }?: Volume4D(maxRange, maxRange, maxRange, maxRange, this)
+            Rule(ratingType, intRangeFrom(comp, value.toInt()), res)
+        }?: Rule("*", maxRange, this)
 
 fun intRangeFrom(comparator: String, right: Int) =
     when(comparator) {
@@ -85,48 +80,51 @@ fun intRangeFrom(comparator: String, right: Int) =
         else -> error("Invalid comparison $comparator")
     }
 
-data class Volume4D(val xRange: IntRange?, val mRange: IntRange?, val aRange: IntRange?, val sRange: IntRange?, val result: String) {
+data class Rule(val axis: String, val range: IntRange, val result: String)
+
+data class Volume4D(val xRange: IntRange, val mRange: IntRange, val aRange: IntRange, val sRange: IntRange, val result: String) {
 
     fun volume(): Long =
-        if (xRange == null || mRange == null || aRange == null || sRange == null) 0
-        else (xRange.size().toLong())*(mRange.size().toLong())*(aRange.size().toLong())*(sRange.size().toLong())
+        (xRange.size().toLong())*(mRange.size().toLong())*(aRange.size().toLong())*(sRange.size().toLong())
 
     fun contains(x: Int, m: Int, a: Int, s: Int) =
-        xRange?.contains(x)?:false && mRange?.contains(m)?:false && aRange?.contains(a)?:false && sRange?.contains(s)?:false
+        xRange.contains(x) && mRange.contains(m) && aRange.contains(a) && sRange.contains(s)
 
     fun intersect(other: Volume4D): Volume4D? {
-        val x = xRange?.intersect(other.xRange)
-        val m = mRange?.intersect(other.mRange)
-        val a = aRange?.intersect(other.aRange)
-        val s = sRange?.intersect(other.sRange)
+        val x = xRange.intersect(other.xRange)
+        val m = mRange.intersect(other.mRange)
+        val a = aRange.intersect(other.aRange)
+        val s = sRange.intersect(other.sRange)
         return if(x != null && m != null && a != null && s != null) Volume4D(x, m, a, s, result)
-        else null
+        else null //todo: error("no intersection $this | $other")
     }
 
-    //todo: not ready for splitting on multiple planes at a time
-    fun splitOn(rule: Volume4D): List<Volume4D> =
-        splitOnX(rule.xRange, rule.result)
-            .flatMap { it.splitOnM(rule.mRange, rule.result) }
-            .flatMap { it.splitOnA(rule.aRange, rule.result) }
-            .flatMap { it.splitOnS(rule.sRange, rule.result) }
+    fun splitOn(rule: Rule): List<Volume4D> =
+        when (rule.axis) {
+            "x" -> splitOnX(rule.range, rule.result)
+            "m" -> splitOnM(rule.range, rule.result)
+            "a" -> splitOnA(rule.range, rule.result)
+            "s" -> splitOnS(rule.range, rule.result)
+            else -> listOf(Volume4D(maxRange, maxRange, maxRange, maxRange, rule.result))
+        }
 
-    fun splitOnX(splitRange: IntRange?, splitResult: String): List<Volume4D> =
-        safeMinusRange(this.xRange, splitRange).map { Volume4D(it, mRange, aRange, sRange, result) }
-            .let { if(splitRange != null) it + Volume4D(splitRange, mRange, aRange, sRange, splitResult) else it }
+    fun splitOnX(splitRange: IntRange, splitResult: String): List<Volume4D> =
+        if(this.xRange.intersect(splitRange) == null) listOf(this)
+        else (this.xRange rangeMinus splitRange).map { Volume4D(it, mRange, aRange, sRange, result) } +
+                Volume4D(splitRange, mRange, aRange, sRange, splitResult)
 
-    fun splitOnM(splitRange: IntRange?, splitResult: String): List<Volume4D> =
-        safeMinusRange(this.mRange, splitRange).map { Volume4D(xRange, it, aRange, sRange, result) }
-            .let { if(splitRange != null) it + Volume4D(xRange, splitRange, aRange, sRange, splitResult) else it }
+    fun splitOnM(splitRange: IntRange, splitResult: String): List<Volume4D> =
+        if(this.mRange.intersect(splitRange) == null) listOf(this)
+        else (this.mRange rangeMinus splitRange).map { Volume4D(xRange, it, aRange, sRange, result) } +
+                Volume4D(xRange, splitRange, aRange, sRange, splitResult)
 
-    fun splitOnA(splitRange: IntRange?, splitResult: String): List<Volume4D> =
-        safeMinusRange(this.aRange, splitRange).map { Volume4D(xRange, mRange, it, sRange, result) }
-            .let { if(splitRange != null) it + Volume4D(xRange, mRange, splitRange, sRange, splitResult) else it }
+    fun splitOnA(splitRange: IntRange, splitResult: String): List<Volume4D> =
+        if(this.aRange.intersect(splitRange) == null) listOf(this)
+        else (this.aRange rangeMinus splitRange).map { Volume4D(xRange, mRange, it, sRange, result) } +
+                Volume4D(xRange, mRange, splitRange, sRange, splitResult)
 
-    fun splitOnS(splitRange: IntRange?, splitResult: String): List<Volume4D> =
-        safeMinusRange(this.sRange, splitRange).map { Volume4D(xRange, mRange, aRange, it, result) }
-            .let { if(splitRange != null) it + Volume4D(xRange, mRange, aRange, splitRange, splitResult) else it }
-
-    private fun safeMinusRange(thisRange: IntRange?, thatRange: IntRange?) =
-        if(thisRange != null && thatRange != null) (thisRange rangeMinus thatRange)
-        else listOf(thisRange)
+    fun splitOnS(splitRange: IntRange, splitResult: String): List<Volume4D> =
+        if(this.sRange.intersect(splitRange) == null) listOf(this)
+        else (this.sRange rangeMinus splitRange).map { Volume4D(xRange, mRange, aRange, it, result) } +
+                Volume4D(xRange, mRange, aRange, splitRange, splitResult)
 }
