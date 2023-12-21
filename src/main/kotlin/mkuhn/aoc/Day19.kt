@@ -30,7 +30,6 @@ fun day19part2(input: List<String>): Long {
     val acceptanceVolumes = split.first()
         .associate { it.toRuleListMap() }
         .rulesToWorkflowVolumes()
-        .apply { this.values.forEach { if(it.sumOf { a -> a.volume() } != 256000000000000) error("bad volume") } }
         .combineToAcceptanceVolumes()
 
     return acceptanceVolumes.sumOf { it.volume() }
