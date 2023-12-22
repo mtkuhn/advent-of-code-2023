@@ -8,40 +8,40 @@ fun main() {
     println(day20part2(input))
 }
 
-fun day20part1(input: List<String>): Int {
+fun day20part1(input: List<String>): Long {
     val modules = input.map { it.nameMapping() }.toModuleMap()
-    val pulseCounts = modules.press(1000)
+    val pulseCounts = modules.press("broadcaster", 1000)
+    println(pulseCounts)
 
-    return pulseCounts.first * pulseCounts.second
+    return pulseCounts.first.toLong() * pulseCounts.second.toLong()
 }
 
-fun day20part2(input: List<String>): Int =
+fun day20part2(input: List<String>): Long =
     2
 
-fun Map<String, Module>.press(count: Int): Pair<Int, Int> {
+fun Map<String, Module>.press(startModule: String, count: Int): Pair<Int, Int> {
     val stateHistory = mutableListOf<String>()
     var pulseCounts = 0 to 0
-    println(this.state())
-    while(this.state() !in stateHistory) {
+    //println(this.state())
+    while(stateHistory.size < count) {
         stateHistory += this.state()
-        val press = this.press()
-        println(this.state())
+        val press = this.press(startModule)
+        //println(this.state())
         pulseCounts = pulseCounts.first+press.first to pulseCounts.second+press.second
     }
 
-    val pressesInCycle = stateHistory.size-stateHistory.indexOf(this.state())
-    val cyclesLeft = count/pressesInCycle
+    //val pressesInCycle = stateHistory.size-stateHistory.indexOf(this.state())
+    //val cycles = count/pressesInCycle
+    //println("$pressesInCycle presses, $cycles cycles left. $pulseCounts | ${this.state()}")
 
-    println("$pressesInCycle presses, $cyclesLeft cycles left. $pulseCounts | ${this.state()}")
-
-    return pulseCounts.first*cyclesLeft to pulseCounts.second*cyclesLeft
+    return pulseCounts.first to pulseCounts.second
 }
 
 fun Map<String, Module>.state(): String =
     this.entries.sortedBy { it.key }.mapNotNull { it.value.serializedState() }.joinToString(";")
 
-fun Map<String, Module>.press(): Pair<Int, Int> {
-    val queued = mutableListOf(Pulse(PulseType.LOW, "broadcaster", "button"))
+fun Map<String, Module>.press(startModule: String): Pair<Int, Int> {
+    val queued = mutableListOf(Pulse(PulseType.LOW, startModule, "origin"))
     val handled = mutableListOf<Pulse>()
 
     while(queued.isNotEmpty()) {
