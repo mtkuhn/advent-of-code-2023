@@ -32,6 +32,12 @@ fun <T> List<List<T>>.transpose(filterCondition: (T) -> Boolean = { true }): Mut
         }
     }
 
+inline fun <T> T.feedbackCycle(count: Int, func: (T) -> T): T {
+    var iter = this
+    repeat(count) { iter = func(iter) }
+    return iter
+}
+
 inline fun <T> Iterable<T>.takeWhileInclusive(predicate: (T) -> Boolean): List<T> {
     val list = ArrayList<T>()
     for (item in this) {
