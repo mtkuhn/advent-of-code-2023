@@ -1,5 +1,6 @@
 package mkuhn.aoc
 
+import mkuhn.aoc.util.leastCommonFactor
 import mkuhn.aoc.util.readInput
 
 fun main() {
@@ -11,31 +12,58 @@ fun main() {
 fun day20part1(input: List<String>): Long {
     val modules = input.map { it.nameMapping() }.toModuleMap()
     val pulseCounts = modules.press("broadcaster", 1000)
-    println(pulseCounts)
-
     return pulseCounts.first.toLong() * pulseCounts.second.toLong()
 }
 
-fun day20part2(input: List<String>): Long =
-    2
+fun day20part2(input: List<String>): Long {
+    val mapping = input.map { it.nameMapping() }
+    val modules = mapping.toModuleMap()
+    val sources = modules["gf"]!!.sources
 
-fun Map<String, Module>.press(startModule: String, count: Int): Pair<Int, Int> {
-    val stateHistory = mutableListOf<String>()
-    var pulseCounts = 0 to 0
-    //println(this.state())
-    while(stateHistory.size < count) {
-        stateHistory += this.state()
-        val press = this.press(startModule)
-        //println(this.state())
-        pulseCounts = pulseCounts.first+press.first to pulseCounts.second+press.second
+    val cycles = sources.map { s ->
+        val submap = mapping.toModuleMap().getSubMapForDestination(s)
+        println(submap)
+        submap.findCycle("broadcaster")
     }
 
-    //val pressesInCycle = stateHistory.size-stateHistory.indexOf(this.state())
-    //val cycles = count/pressesInCycle
-    //println("$pressesInCycle presses, $cycles cycles left. $pulseCounts | ${this.state()}")
+    return leastCommonFactor(cycles.map { it.first.toLong() })
+}
+
+fun Map<String, Module>.press(startModule: String, count: Int): Pair<Int, Int> {
+    var pulseCounts = 0 to 0
+
+    repeat(count) {
+        val press = this.press(startModule)
+        pulseCounts = pulseCounts.first + press.first to pulseCounts.second + press.second
+    }
 
     return pulseCounts.first to pulseCounts.second
 }
+
+fun Map<String, Module>.findCycle(startModule: String): Triple<Int, Int, Int> {
+    val stateHistory = mutableListOf<String>()
+    var pulseCounts = 0 to 0
+    while(this.state() !in stateHistory) { //todo: and this module produces a low pulse
+        stateHistory += this.state()
+        val press = this.press(startModule)
+        pulseCounts = pulseCounts.first+press.first to pulseCounts.second+press.second
+    }
+
+    val cycleLength = stateHistory.size-stateHistory.indexOf(this.state())
+
+    return Triple(cycleLength, pulseCounts.first, pulseCounts.second)
+}
+
+fun Map<String, Module>.getSubMapForDestination(dest: String): Map<String, Module> {
+    val modulesToInclude = mutableSetOf(this[dest])
+    var lastSize = 0
+    while(modulesToInclude.size != lastSize) {
+        lastSize = modulesToInclude.size
+        modulesToInclude += modulesToInclude.mapNotNull { m -> m?.sources?.map { this[it] } }.flatten().filter { it !in modulesToInclude }
+    }
+    return this.filter { e -> e.key in modulesToInclude.mapNotNull { it?.name } }
+}
+
 
 fun Map<String, Module>.state(): String =
     this.entries.sortedBy { it.key }.mapNotNull { it.value.serializedState() }.joinToString(";")
@@ -51,7 +79,6 @@ fun Map<String, Module>.press(startModule: String): Pair<Int, Int> {
         queued += newPulses
     }
 
-    //handled.forEach { println(it) }
     return handled.count { it.type == PulseType.LOW } to handled.count { it.type == PulseType.HIGH }
 }
 

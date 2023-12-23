@@ -112,3 +112,8 @@ infix fun IntRange.intersect(other: IntRange?): IntRange? =
 
 fun IntRange.size() = this.last - this.first + 1
 
+fun greatestCommonFactor(a: Long, b: Long): Long = if (b == 0L) a else greatestCommonFactor(b, a % b)
+fun leastCommonFactor(a: Long, b: Long): Long = (a*b) / greatestCommonFactor(a, b)
+fun leastCommonFactor(a: List<Long>): Long = a.reduce { acc, f -> leastCommonFactor(acc, f) }
+fun <T> Sequence<T>.repeatForever() = generateSequence(this) { it }.flatten() //Thank you, stack overflow
+

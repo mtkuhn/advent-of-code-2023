@@ -1,6 +1,8 @@
 package mkuhn.aoc
 
+import mkuhn.aoc.util.leastCommonFactor
 import mkuhn.aoc.util.readInput
+import mkuhn.aoc.util.repeatForever
 import mkuhn.aoc.util.takeWhileInclusive
 
 fun main() {
@@ -32,10 +34,6 @@ fun day08part2(input: List<String>): Long {
     val repeats = startingNodes.map { sn -> MapTraveler(sn, map).moveAndFindLoopFrequency(instructions).toLong() }
     return repeats.reduce { acc, f -> leastCommonFactor(acc, f) }
 }
-
-fun greatestCommonFactor(a: Long, b: Long): Long = if (b == 0L) a else greatestCommonFactor(b, a % b)
-fun leastCommonFactor(a: Long, b: Long): Long = (a*b) / greatestCommonFactor(a, b)
-fun <T> Sequence<T>.repeatForever() = generateSequence(this) { it }.flatten() //Thank you, stack overflow
 
 class MapTraveler(var currentNode: String, val map: Map<String, List<String>>) {
 
