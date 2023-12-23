@@ -30,7 +30,5 @@ fun reachablePlots(input: List<String>, steps: Int): Int {
 }
 
 fun reachablePlotsInfinite() {
-    //1 - for each map edge, get final step points (not distinct, with multiples or counts)
-    //2 - for the start, get final step points (not distinct, with multiples or counts)
-    //3 -
+
 }
